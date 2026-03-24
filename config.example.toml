@@ -1,0 +1,18 @@
+[server]
+bind_address = "127.0.0.1"
+port = 4012
+
+[agent_upstream]
+# agent-service / lowcode-websocket 内部入口地址
+api_base_url = "http://127.0.0.1:4013"
+agent_message_path = "/agent/message"
+request_timeout_secs = 30
+
+[logging]
+level = "info"
+
+[redis]
+url = "redis://127.0.0.1:6379/"
+route_key_prefix = "ws:route:user"
+queue_key_prefix = "ws:queue:node"
+node_alive_key_prefix = "ws:node:alive"
