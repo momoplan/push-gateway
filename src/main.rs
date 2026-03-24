@@ -1,9 +1,7 @@
-mod agent_upstream;
 mod config;
 mod delivery;
 mod models;
 
-use agent_upstream::AgentUpstreamClient;
 use axum::{
     extract::State,
     http::StatusCode,
@@ -22,7 +20,6 @@ use tracing::{error, info};
 #[derive(Clone)]
 struct AppState {
     redis_delivery: Arc<RedisDelivery>,
-    agent_upstream: Arc<AgentUpstreamClient>,
 }
 
 #[tokio::main]
@@ -53,16 +50,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                 .await
                 .map_err(std::io::Error::other)?,
         ),
-        agent_upstream: Arc::new(
-            AgentUpstreamClient::new(app_config.agent_upstream.clone())
-                .map_err(std::io::Error::other)?,
-        ),
     };
 
     let app = Router::new()
         .route("/healthz", get(healthz))
         .route("/push", post(push))
-        .route("/agent/message", post(agent_message))
         .with_state(state);
 
     let addr: SocketAddr = format!(
@@ -117,23 +109,6 @@ async fn push(
     }))
 }
 
-async fn agent_message(
-    State(state): State<AppState>,
-    Json(payload): Json<Value>,
-) -> Result<Json<Value>, (StatusCode, Json<ErrorResponse>)> {
-    if !payload.is_object() {
-        return Err(bad_request("请求体必须是 JSON object"));
-    }
-
-    let response = state
-        .agent_upstream
-        .forward_agent_message(&payload)
-        .await
-        .map_err(upstream_error)?;
-
-    Ok(Json(response))
-}
-
 fn bad_request(message: impl Into<String>) -> (StatusCode, Json<ErrorResponse>) {
     (
         StatusCode::BAD_REQUEST,
@@ -150,17 +125,6 @@ fn internal_error(message: String) -> (StatusCode, Json<ErrorResponse>) {
         StatusCode::INTERNAL_SERVER_ERROR,
         Json(ErrorResponse {
             code: "INTERNAL_ERROR",
-            message,
-        }),
-    )
-}
-
-fn upstream_error(message: String) -> (StatusCode, Json<ErrorResponse>) {
-    error!("push gateway upstream error: {}", message);
-    (
-        StatusCode::BAD_GATEWAY,
-        Json(ErrorResponse {
-            code: "UPSTREAM_ERROR",
             message,
         }),
     )

@@ -3,7 +3,6 @@ use serde::Deserialize;
 #[derive(Debug, Clone, Deserialize)]
 pub struct AppConfig {
     pub server: ServerConfig,
-    pub agent_upstream: AgentUpstreamConfig,
     pub logging: LoggingConfig,
     pub redis: RedisConfig,
 }
@@ -12,15 +11,6 @@ pub struct AppConfig {
 pub struct ServerConfig {
     pub bind_address: String,
     pub port: u16,
-}
-
-#[derive(Debug, Clone, Deserialize)]
-pub struct AgentUpstreamConfig {
-    pub api_base_url: String,
-    #[serde(default = "default_agent_message_path")]
-    pub agent_message_path: String,
-    #[serde(default = "default_agent_request_timeout_secs")]
-    pub request_timeout_secs: u64,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -37,14 +27,6 @@ pub struct RedisConfig {
     pub queue_key_prefix: String,
     #[serde(default = "default_node_alive_key_prefix")]
     pub node_alive_key_prefix: String,
-}
-
-fn default_agent_message_path() -> String {
-    "/agent/message".to_string()
-}
-
-fn default_agent_request_timeout_secs() -> u64 {
-    30
 }
 
 fn default_route_key_prefix() -> String {
@@ -78,12 +60,7 @@ impl Default for AppConfig {
         Self {
             server: ServerConfig {
                 bind_address: "127.0.0.1".to_string(),
-                port: 4012,
-            },
-            agent_upstream: AgentUpstreamConfig {
-                api_base_url: "http://127.0.0.1:4013".to_string(),
-                agent_message_path: default_agent_message_path(),
-                request_timeout_secs: default_agent_request_timeout_secs(),
+                port: 4013,
             },
             logging: LoggingConfig {
                 level: "info".to_string(),
